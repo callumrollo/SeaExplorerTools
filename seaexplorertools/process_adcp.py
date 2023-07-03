@@ -3,7 +3,7 @@ from glob import glob
 import seaexplorertools.seaexplorer_utilities as sx
 from tqdm import tqdm
 from datetime import datetime as dt
-
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -121,6 +121,10 @@ def load_adcp_glider_data(adcp_path, glider_pqt_path, options):
     else:
         options['top_mounted'] = False
     plog(f'top mounted: {options["top_mounted"]}')
+    if "plots_directory" in options.keys():
+        if not Path(options['plots_directory']).exists():
+            Path(options['plots_directory']).mkdir(parents=True)
+            plog(f'Created dir {options["plots_directory"]}')
     return ADCP, data, ADCP_settings, options
 
 
@@ -201,6 +205,8 @@ def remapADCPdepth(ADCP, options):
 
         plt.ylim([-5, 40])
         plt.gca().invert_yaxis()
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'beam_check.png')
     plog('Depth calculation of cells correct. Beam 1 2 4 match on down; 3 2 4 match on up. (Tested on downward facing)')
     return ADCP
 
@@ -334,6 +340,8 @@ def _heading_correction(ADCP, data, options):
     plt.xlabel('MagX')
     plt.ylabel('MagY')
     plt.axis('square')
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'heading_correction.png')
 
     return cal_heading
 
@@ -387,6 +395,8 @@ def remove_outliers(ADCP, options):
         plt.pcolormesh(ADCP['Velocity Range'], ADCP['time'], ADCP['VelocityBeam3'])
         plt.subplot(144)
         plt.pcolormesh(ADCP['Velocity Range'], ADCP['time'], ADCP['VelocityBeam4'])
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'velocity_range_pre_correction.png')
 
     # From Tanaka:
     # the velocity was 0.5 m s-1 or less,
@@ -441,6 +451,8 @@ def remove_outliers(ADCP, options):
         plt.pcolormesh(ADCP['Velocity Range'], ADCP['time'], ADCP['VelocityBeam3'])
         plt.subplot(144)
         plt.pcolormesh(ADCP['Velocity Range'], ADCP['time'], ADCP['VelocityBeam4'])
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'velocity_range_post_correction.png')
 
     return ADCP
 
@@ -764,6 +776,8 @@ def regridADCPdata(ADCP, ADCP_settings, options, depth_offsets=None):
         [plt.plot(ADCP['Correlation Range'].values, means[x] - stds[x], ':r') for x in range(4)]
         plt.axvline(max_bin, color='g')
         plt.title('Bin correlations')
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'bin_correlation.png')
 
         return np.arange(0, max_distance + bin_size, bin_size / 2) * direction
 
@@ -833,6 +847,8 @@ def regridADCPdata(ADCP, ADCP_settings, options, depth_offsets=None):
         plt.pcolormesh(ADCP['depth_offset'], ADCP['time'][idx], ADCP['V3'][idx, :])
         plt.subplot(144)
         plt.pcolormesh(ADCP['depth_offset'], ADCP['time'][idx], ADCP['V4'][idx, :])
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'depth_offset.png')
     return ADCP
 
 
@@ -913,6 +929,8 @@ def calcXYZfrom3beam(ADCP, options):
     _ = plt.hist(Z[~upcasts, :].flatten(), np.linspace(-1, 1, 100) / 10, color='y', alpha=0.4)
     plt.axvline(0)
     plt.title('Both Z histograms should be opposite')
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'xyz_velocity_check.png')
 
     plt.figure(figsize=(9, 9))
     plt.subplot(411)
@@ -935,6 +953,8 @@ def calcXYZfrom3beam(ADCP, options):
     plt.subplot(414)
     _ = plt.hist(ADCP['ZZ4'].mean(dim='bin').values.flatten() - ADCP['Z4'].mean(dim='bin').values.flatten(),
                  np.linspace(-1, 1, 100) / 20, color='r', alpha=0.5)
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'xyz_velocity_bins.png')
 
     plog('Calculating X,Y,Z from isobaric 3-beam measurements.')
 
@@ -968,6 +988,8 @@ def calcXYZfrom3beam(ADCP, options):
         plt.pcolormesh(ADCP['depth_offset'], ADCP['time'][idx], ADCP['Z'][idx, :])
         plt.colorbar(location='top')
         plt.clim([-0.1, 0.1])
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'xyz_velocity_bins.png')
     return ADCP
 
 
@@ -1019,6 +1041,8 @@ def calcENUfromXYZ(ADCP, data, options):
     plt.plot(U, ':r', alpha=0.5, label='ADCP U')
     plt.ylim([-0.3, 0.3])
     plt.legend()
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'enu_velocity_check.png')
 
     ##### PLOT 2
     deltat = np.append(np.diff(ADCP['time'].values.astype('float') / 1e9), np.NaN)
@@ -1061,9 +1085,13 @@ def calcENUfromXYZ(ADCP, data, options):
     plt.plot(E.cumsum(skipna=True), N.cumsum(skipna=True), '-r', alpha=0.5, linewidth=5, label='ADCP E & N')
     plt.plot(vg_e.cumsum(skipna=True), vg_n.cumsum(skipna=True), '-g', alpha=0.5, linewidth=5, label='Flight model')
     plt.legend()
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'enu_velocity_flight_model_check.png')
 
     plt.figure()
     plt.scatter(ADCP['Longitude'].isel(time=_gd).values, ADCP['Latitude'].isel(time=_gd).values)
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'lon_lat_check.png')
 
     ADCP['Sh_E'] = (['time', 'gridded_bin'],
                     ADCP['E'].differentiate('gridded_bin').values
@@ -1090,11 +1118,13 @@ def calcENUfromXYZ(ADCP, data, options):
     plt.gca().invert_yaxis()
     plt.colorbar()
     plt.clim(np.array([-1, 1]) * 0.1)
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'enu_shear_check.png')
 
     return ADCP
 
 
-def verify_calcENUfromXYZ(ADCP):
+def verify_calcENUfromXYZ(ADCP, options):
     plt.figure(figsize=(12,7))
 
     PD = (ADCP['Pitch'].values < 0) & (ADCP['Depth'].values > 20)
@@ -1150,9 +1180,11 @@ def verify_calcENUfromXYZ(ADCP):
     plt.colorbar()
     plt.clim([bins[0] / 10, bins[-1] / 10])
     plt.gca().invert_yaxis()
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'enu_check.png')
 
 
-def get_DAC(ADCP, data):
+def get_DAC(ADCP, data, options):
     ## Calculate full x-y dead reckoning during each dive
     def reset_transport_at_GPS(arr):
         ffill = lambda arr: pd.DataFrame(arr).fillna(method='ffill').values.flatten()
@@ -1256,10 +1288,12 @@ def get_DAC(ADCP, data):
     plt.scatter(X, Y, 100, N, cmap=cmo.balance)
     plt.colorbar()
     plt.title('North')
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'DAC.png')
     return data
 
 
-def getSurfaceDrift(data):
+def getSurfaceDrift(data, options):
     _gps = (data.data.DeadReckoning.values < 1) & (data.data.NAV_RESOURCE.values == 116)
 
     lon2m = lambda x, y: gsw.distance([x, x + 1], [y, y])
@@ -1299,6 +1333,8 @@ def getSurfaceDrift(data):
     plt.subplot(212)
     plt.plot(pd.to_datetime(dT), dN, '.-r')
     plt.title('V')
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'surface_drift.png')
 
     return dE, dN, dT
 
@@ -1418,7 +1454,7 @@ def bottom_track(ADCP, adcp_path, options):
     return ADCP
 
 
-def verify_bottom_track(ADCP, data, dE,dN,dT ):
+def verify_bottom_track(ADCP, data, dE, dN, dT, options):
     x = np.arange(0,np.shape(ADCP.Sh_E.values)[0],1)
 
     SHEm,XI,YI = sx.grid2d(
@@ -1462,6 +1498,8 @@ def verify_bottom_track(ADCP, data, dE,dN,dT ):
 
     plt.subplot(222)
     _ = plt.hist(SHEs.flatten(), np.linspace(0,0.05,100))
+    if "plots_directory" in options.keys():
+        plt.savefig(Path(options['plots_directory']) / 'verify_bottom_track.png')
 
     out = {}
     y_res = 1
@@ -1598,6 +1636,8 @@ def verify_bottom_track(ADCP, data, dE,dN,dT ):
 
         plt.legend(('DAC error ' + letter, 'Drift error ' + letter, 'BT error ' + letter))
         plt.ylim([-0.2, 0.2])
+        if "plots_directory" in options.keys():
+            plt.savefig(Path(options['plots_directory']) / 'integrated_shear.png')
     return out, xaxis, yaxis, taxis, days
 
 

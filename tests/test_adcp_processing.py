@@ -33,10 +33,10 @@ def test_processing():
     ADCP = process_adcp.regridADCPdata(ADCP, ADCP_settings, options)
     ADCP = process_adcp.calcXYZfrom3beam(ADCP, options)
     ADCP = process_adcp.calcENUfromXYZ(ADCP, data, options)
-    data = process_adcp.get_DAC(ADCP, data)
-    dE, dN, dT = process_adcp.getSurfaceDrift(data)
+    data = process_adcp.get_DAC(ADCP, data, options)
+    dE, dN, dT = process_adcp.getSurfaceDrift(data, options)
     ADCP = process_adcp.bottom_track(ADCP, adcp_path, options)
-    out, xaxis, yaxis, taxis, days = process_adcp.verify_bottom_track(ADCP, data, dE, dN, dT)
+    out, xaxis, yaxis, taxis, days = process_adcp.verify_bottom_track(ADCP, data, dE, dN, dT, options)
     out = process_adcp.grid_data(ADCP, data, out, xaxis, yaxis)
     out = process_adcp.calc_bias(out, yaxis, taxis, days)
 
