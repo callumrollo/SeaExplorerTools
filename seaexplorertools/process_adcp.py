@@ -1759,7 +1759,7 @@ def calc_bias(out, yaxis, taxis, days):
     def score(E, N):
         rmsd_h = lambda x: np.sqrt(np.nanmean(x ** 2, axis=1))
         rmsd = lambda x: np.sqrt(np.nanmean(x ** 2))
-        y_weighting = lambda x: x * 0 + 1
+        y_weighting = lambda x: x * 0 + 1 #   lambda x : x
         return rmsd((rmsd_h(E) + rmsd_h(N)) * y_weighting(yaxis)) * 1e6
 
     def fn(coeff):
@@ -1816,4 +1816,24 @@ def calc_bias(out, yaxis, taxis, days):
     plt.xlabel('Yo number')
     plt.xlabel('Depth')
     plt.title('Northward velocity (m.s-1)')
+    return out
+
+
+def process_mission(adcp_path, glider_pqt_path, options):
+    ADCP, data, ADCP_settings, options = load_adcp_glider_data(adcp_path, glider_pqt_path, options)
+    ADCP = remapADCPdepth(ADCP, options)
+    ADCP = correct_heading(ADCP, data, options)
+    ADCP = soundspeed_correction(ADCP)
+    ADCP = remove_outliers(ADCP, options)
+    ADCP = correct_shear(ADCP, options)
+    ADCP = correct_backscatter(ADCP, data)
+    ADCP = regridADCPdata(ADCP, ADCP_settings, options)
+    ADCP = calcXYZfrom3beam(ADCP, options)
+    ADCP = calcENUfromXYZ(ADCP, data, options)
+    data = get_DAC(ADCP, data)
+    dE, dN, dT = getSurfaceDrift(data)
+    ADCP = bottom_track(ADCP, adcp_path, options)
+    out, xaxis, yaxis, taxis, days = verify_bottom_track(ADCP, data, dE, dN, dT)
+    out = grid_data(ADCP, data, out, xaxis, yaxis)
+    out = calc_bias(out, yaxis, taxis, days)
     return out

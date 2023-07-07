@@ -23,22 +23,7 @@ def test_processing():
         'correctZZshear': False,
         'ADCP_regrid_correlation_threshold': 20,
     }
-    ADCP, data, ADCP_settings, options = process_adcp.load_adcp_glider_data(adcp_path, glider_pqt_path, options)
-    ADCP = process_adcp.remapADCPdepth(ADCP, options)
-    ADCP = process_adcp.correct_heading(ADCP, data, options)
-    ADCP = process_adcp.soundspeed_correction(ADCP)
-    ADCP = process_adcp.remove_outliers(ADCP, options)
-    ADCP = process_adcp.correct_shear(ADCP, options)
-    ADCP = process_adcp.correct_backscatter(ADCP, data)
-    ADCP = process_adcp.regridADCPdata(ADCP, ADCP_settings, options)
-    ADCP = process_adcp.calcXYZfrom3beam(ADCP, options)
-    ADCP = process_adcp.calcENUfromXYZ(ADCP, data, options)
-    data = process_adcp.get_DAC(ADCP, data)
-    dE, dN, dT = process_adcp.getSurfaceDrift(data)
-    ADCP = process_adcp.bottom_track(ADCP, adcp_path, options)
-    out, xaxis, yaxis, taxis, days = process_adcp.verify_bottom_track(ADCP, data, dE, dN, dT)
-    out = process_adcp.grid_data(ADCP, data, out, xaxis, yaxis)
-    out = process_adcp.calc_bias(out, yaxis, taxis, days)
+    out = process_adcp.process_mission(adcp_path, glider_pqt_path, options)
 
     profiles = np.arange(out["Pressure"].shape[1])
     depth_bins = np.arange(out["Pressure"].shape[0])
